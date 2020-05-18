@@ -47,6 +47,7 @@
     PATH_STRAIGHT = 1, PATH_ARC = 2, PATH_FLUID = 3, PATH_MAGNET = 4, PATH_GRID = 5,
     PATH_KEY_2_ID = {
       straight: PATH_STRAIGHT, arc: PATH_ARC, fluid: PATH_FLUID, magnet: PATH_MAGNET, grid: PATH_GRID},
+    DEFAULT_CONTAINER_NAME = 'leader-line-container',
 
     /**
      * @typedef {Object} SymbolConf
@@ -902,11 +903,16 @@
     return bodyOffset;
   }
 
+  function isParentContainerExist() {
+    return !!window.document.getElementById(DEFAULT_CONTAINER_NAME);
+  }
+
   function setupWindow(window) {
     var baseDocument = window.document, defsSvg;
     if (!baseDocument.getElementById(DEFS_ID)) { // Add svg defs
       defsSvg = (new window.DOMParser()).parseFromString(DEFS_HTML, 'image/svg+xml');
-      baseDocument.body.appendChild(defsSvg.documentElement);
+      if (!isParentContainerExist()) console.warn('no parent container');
+      baseDocument.getElementById(DEFAULT_CONTAINER_NAME).appendChild(defsSvg.documentElement);
       pathDataPolyfill(window);
     }
   }
@@ -1110,7 +1116,9 @@
       svg.style.visibility = 'hidden';
     }
 
-    baseDocument.body.appendChild(svg);
+    // baseDocument.body.appendChild(svg);
+    if (!isParentContainerExist()) console.warn('no parent container');
+    baseDocument.getElementById(DEFAULT_CONTAINER_NAME).appendChild(svg);
 
     // label (after appendChild(svg), bBox is used)
     [0, 1, 2].forEach(function(i) {
@@ -3347,9 +3355,10 @@
    * @class
    * @param {Element} [start] - Alternative to `options.start`.
    * @param {Element} [end] - Alternative to `options.end`.
+   * @param {String | null} [appendToNodeById]
    * @param {Object} [options] - Initial options.
    */
-  function LeaderLine(start, end, options) {
+  function LeaderLine(start, end, appendToNodeById, options) {
     var props = {
       // Initialize properties as array.
       options: {anchorSE: [], socketSE: [], socketGravitySE: [], plugSE: [], plugColorSE: [], plugSizeSE: [],
@@ -3357,6 +3366,10 @@
       optionIsAttach: {anchorSE: [false, false], labelSEM: [false, false, false]},
       curStats: {}, aplStats: {}, attachments: [], events: {}, reflowTargets: []
     };
+
+    if (appendToNodeById) {
+      DEFAULT_CONTAINER_NAME = appendToNodeById;
+    }
 
     initStats(props.curStats, STATS);
     initStats(props.aplStats, STATS);
