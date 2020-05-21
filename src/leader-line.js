@@ -48,6 +48,9 @@
     PATH_KEY_2_ID = {
       straight: PATH_STRAIGHT, arc: PATH_ARC, fluid: PATH_FLUID, magnet: PATH_MAGNET, grid: PATH_GRID},
     DEFAULT_CONTAINER_NAME = 'leader-line-container',
+    PARENT_CONTAINER_NAME = null,
+      START_ID = null,
+      END_ID = null,
 
     /**
      * @typedef {Object} SymbolConf
@@ -883,7 +886,12 @@
       stylesBody = window.getComputedStyle(baseDocument.body, ''),
       bodyOffset = {x: 0, y: 0};
 
-    if (stylesBody.position !== 'static') {
+    if (PARENT_CONTAINER_NAME) {
+      var rect = window.document.getElementById(PARENT_CONTAINER_NAME).getBoundingClientRect();
+      bodyOffset = {x: -rect.x, y: -rect.y};
+    }
+
+      if (stylesBody.position !== 'static') {
       // When `<body>` has `position:(non-static)`,
       // `element{position:absolute}` is positioned relative to border-box of `<body>`.
       bodyOffset.x -=
@@ -912,6 +920,10 @@
     if (!baseDocument.getElementById(DEFS_ID)) { // Add svg defs
       defsSvg = (new window.DOMParser()).parseFromString(DEFS_HTML, 'image/svg+xml');
       if (!isParentContainerExist()) console.warn('no parent container');
+
+      var coordsDiv = window.document.createElement('div');
+      coordsDiv.setAttribute('id', 'leader-line-')
+
       baseDocument.getElementById(DEFAULT_CONTAINER_NAME).appendChild(defsSvg.documentElement);
       pathDataPolyfill(window);
     }
@@ -979,9 +991,38 @@
     props.svg = svg = baseDocument.createElementNS(SVG_NS, 'svg');
     svg.className.baseVal = APP_ID;
     if (!svg.viewBox.baseVal) { svg.setAttribute('viewBox', '0 0 0 0'); } // for Firefox bug
+    svg.setAttribute('id', START_ID + END_ID);
     props.defs = defs = svg.appendChild(baseDocument.createElementNS(SVG_NS, 'defs'));
 
+    /*
+    var cross = START_ID + '-cross';
+
+    var element = baseDocument.createElementNS(SVG_NS, 'marker');
+    element.setAttribute('id', cross);
+    element.setAttribute('viewBox', '0 0 4 4');
+    element.setAttribute('refX', '2');
+    element.setAttribute('refY', '2');
+    element.setAttribute('markerWidth', '4');
+    element.setAttribute('markerHeight', '4');
+    element.setAttribute('orient', 'auto');
+    var elementPath = baseDocument.createElementNS(SVG_NS, 'circle');
+    elementPath.setAttribute('cx', '2');
+    elementPath.setAttribute('cy', '2');
+    elementPath.setAttribute('r', '2');
+    elementPath.setAttribute('stroke', 'none');
+    elementPath.setAttribute('fill', '#ffffff');
+    element.appendChild(elementPath);
+
+    defs.appendChild(element);
+     */
+
+
     props.linePath = element = defs.appendChild(baseDocument.createElementNS(SVG_NS, 'path'));
+
+    // var cross = 'url(#' + START_ID + '-cross)';
+
+    // element.setAttribute('marker-start', cross);
+
     element.id = (linePathId = prefix + '-line-path');
     element.className.baseVal = APP_ID + '-line-path';
     if (IS_WEBKIT) {
@@ -1388,6 +1429,8 @@
           props.plugsFace.style[marker.prop] = value ? 'url(#' + props.plugMarkerIdSE[i] + ')' : 'none';
           updated = true;
         }
+
+        // props.plugsFace.style.markerMid = 'url(#cross)';
 
         if (curStats.plug_enabledSE[i]) {
 
@@ -3356,9 +3399,10 @@
    * @param {Element} [start] - Alternative to `options.start`.
    * @param {Element} [end] - Alternative to `options.end`.
    * @param {String | null} [appendToNodeById]
+   * @param {String | null} [parentNodeId]
    * @param {Object} [options] - Initial options.
    */
-  function LeaderLine(start, end, appendToNodeById, options) {
+  function LeaderLine(start, end, appendToNodeById, parentNodeId, options) {
     var props = {
       // Initialize properties as array.
       options: {anchorSE: [], socketSE: [], socketGravitySE: [], plugSE: [], plugColorSE: [], plugSizeSE: [],
@@ -3367,9 +3411,14 @@
       curStats: {}, aplStats: {}, attachments: [], events: {}, reflowTargets: []
     };
 
+    START_ID = start.getAttribute('id');
+    END_ID = end.getAttribute('id');
+
     if (appendToNodeById) {
       DEFAULT_CONTAINER_NAME = appendToNodeById;
     }
+
+    PARENT_CONTAINER_NAME = parentNodeId;
 
     initStats(props.curStats, STATS);
     initStats(props.aplStats, STATS);
